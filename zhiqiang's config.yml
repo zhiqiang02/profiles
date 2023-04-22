@@ -1,0 +1,155 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+external-controller: 127.0.0.1:9090
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  use-hosts: false
+  default-nameserver:
+    - 119.29.29.29
+  fake-ip-filter:
+    - '*.lan'
+    - 'localhost.ptlogin2.qq.com'
+    - dns.msftncsi.com
+    - "*.srv.nintendo.net"
+    - "*.stun.playstation.net"
+    - xbox.*.microsoft.com
+    - "*.xboxlive.com"
+    - "lens.l.google.com"
+  nameserver:
+    - https://223.6.6.6/dns-query
+    - https://rubyfish.cn/dns-query
+    - https://1.12.12.12/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://dns.rubyfish.cn/dns-query
+    - https://public.dns.iij.jp/dns-query
+    - tls://8.8.4.4
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+      - 0.0.0.0/32
+
+healthCheck: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 300}
+proxy-providers:
+  TAG:
+    type: http
+    url: https://tagcdnsub.com/api/v1/client/subscribe?token=********************************&flag=clash
+    path: ./nodelist/TAG.yaml
+    interval: 86400
+    health-check: *cloudflare
+    
+  Nexitally:
+    type: http
+    url: https://sub.nexconvert.com/downloadConfig/Clash.aspx?eq=windows&urk=******************************** # &t=trojan
+    path: ./nodelist/nexitally.yaml
+    interval: 86400
+    health-check: *cloudflare
+
+proxies:
+  # Nexitally HK 5, Trojan and SS
+  - {name: Hong Kong 05 Trojan, ********************************************************* skip-cert-verify: true, udp: true}
+  - {name: Hong Kong 05, type: ss, ******************************************************************** udp: true, protocol: origin}
+
+proxy-groups:
+  - name: Proxy
+    type: select
+    use: [Nexitally, TAG]
+  
+  - name: Google
+    type: select
+    proxies: [Hong Kong 05]
+    use: [Nexitally, TAG]
+    filter: 'USA|美国'
+  
+  - name: OpenAI
+    type: select
+    use: [Nexitally]
+    filter: 'Singapore|USA'
+
+  - name: Riot
+    type: select
+    use: [TAG]
+    filter: '台湾家宽'
+
+rules:
+  - DOMAIN,www.baidu.com,Proxy
+  - RULE-SET,applications,DIRECT
+  - DOMAIN,clash.razord.top,DIRECT
+  - DOMAIN,yacd.haishan.me,DIRECT
+  - DOMAIN,www.msftconnecttest.com,Proxy
+
+  - IP-CIDR,103.240.225.128/26,Hong Kong 05 Trojan,no-resolve
+  - IP-CIDR,103.240.224.128/26,Hong Kong 05 Trojan,no-resolve
+  - RULE-SET,Riot,Riot
+
+  - DOMAIN,autopatchhk.yuanshen.com,Proxy
+  - PROCESS-NAME,left4dead2.exe,DIRECT
+  
+  - RULE-SET,Google,Google,no-resolve
+  - RULE-SET,OpenAI,OpenAI
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,proxy,Proxy
+  - RULE-SET,direct,DIRECT
+  - IP-CIDR,149.154.160.0/20,Google # ipcidr of telegram_dc1, 与telegramcidr有重复, 但懒得新开策略组了
+  - RULE-SET,telegramcidr,Proxy
+  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,cncidr,DIRECT
+  - MATCH,Proxy
+
+classical: &classical {type: http, behavior: classical, interval: 86400}
+domain: &domain {type: http, behavior: domain, interval: 86400}
+ipcidr: &ipcidr {type: http, behavior: ipcidr, interval: 86400}
+rule-providers:
+  Riot:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Riot/Riot.yaml
+    path: ./ruleset/Riot.yaml
+  Google:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.yaml
+    path: ./ruleset/Google.yaml
+  OpenAI:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml
+    path: ./ruleset/OpenAI.yaml
+    
+  reject:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt
+    path: ./ruleset/reject.yaml
+  proxy:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt
+    path: ./ruleset/proxy.yaml
+  direct:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt
+    path: ./ruleset/direct.yaml
+  private:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt
+    path: ./ruleset/private.yaml
+  telegramcidr:
+    <<: *ipcidr
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt
+    path: ./ruleset/telegramcidr.yaml
+  cncidr:
+    <<: *ipcidr
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt
+    path: ./ruleset/cncidr.yaml
+  lancidr:
+    <<: *ipcidr
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/lancidr.txt
+    path: ./ruleset/lancidr.yaml
+  applications:
+    <<: *classical
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/applications.txt
+    path: ./ruleset/applications.yaml
