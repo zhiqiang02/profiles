@@ -1,3 +1,3 @@
-# config
+# profiles
 
 backups for self-use
