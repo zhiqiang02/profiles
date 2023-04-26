@@ -9,6 +9,8 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   use-hosts: false
+  nameserver-policy:
+    'class.seig.edu.cn': '172.16.2.1'
   default-nameserver:
     - 119.29.29.29
   fake-ip-filter:
