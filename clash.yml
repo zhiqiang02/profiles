@@ -10,7 +10,7 @@ dns:
   enhanced-mode: fake-ip
   use-hosts: false
   nameserver-policy:
-    'class.seig.edu.cn': '172.16.2.1'
+    '*.seig.edu.cn': '172.16.2.1' # 有些东西在外边无法访问，但又不想用学校的dns，所以就当个例外吧
   default-nameserver:
     - 119.29.29.29
   fake-ip-filter:
@@ -23,9 +23,9 @@ dns:
     - "*.xboxlive.com"
     - "lens.l.google.com"
   nameserver:
+    - https://1.12.12.12/dns-query
     - https://223.6.6.6/dns-query
     - https://rubyfish.cn/dns-query
-    - https://1.12.12.12/dns-query
   fallback:
     - https://1.1.1.1/dns-query
     - https://dns.rubyfish.cn/dns-query
@@ -42,22 +42,21 @@ healthCheck: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_2
 proxy-providers:
   TAG:
     type: http
-    url: https://tagcdnsub.com/api/v1/client/subscribe?token=********************************&flag=clash
+    url: hidden
     path: ./nodelist/TAG.yaml
-    interval: 86400
+    interval: 259200
     health-check: *cloudflare
     
   Nexitally:
     type: http
-    url: https://sub.nexconvert.com/downloadConfig/Clash.aspx?eq=windows&urk=******************************** # &t=trojan
+    url: hidden
     path: ./nodelist/nexitally.yaml
-    interval: 86400
+    interval: 259200
     health-check: *cloudflare
 
 proxies:
-  # Nexitally HK 5, Trojan and SS
-  - {name: Hong Kong 05 Trojan, ********************************************************* skip-cert-verify: true, udp: true}
-  - {name: Hong Kong 05, type: ss, ******************************************************************** udp: true, protocol: origin}
+  - {name: Hong Kong 05 Trojan, type: trojan, server: hidden, port: hidden, password: hidden, sni: hidden, skip-cert-verify: true, udp: true}
+  - {name: Hong Kong 05, type: ss, server: hidden, port: hidden, cipher: aes-128-gcm, password: hidden, udp: true, protocol: origin}
 
 proxy-groups:
   - name: Proxy
@@ -77,8 +76,13 @@ proxy-groups:
 
   - name: Riot
     type: select
+    proxies: [Hong Kong 05, DIRECT]
     use: [TAG]
     filter: '台湾家宽'
+
+  - name: LoLgaming
+    type: select
+    proxies: [Hong Kong 05 Trojan, DIRECT]
 
 rules:
   - DOMAIN,www.baidu.com,Proxy
@@ -86,11 +90,12 @@ rules:
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
   - DOMAIN,www.msftconnecttest.com,Proxy
+  - DOMAIN,sub.nexconvert.com,DIRECT
+  - DOMAIN,tagcdnsub.com,Proxy
 
-  - IP-CIDR,103.240.225.128/26,Hong Kong 05 Trojan,no-resolve
-  - IP-CIDR,103.240.224.128/26,Hong Kong 05 Trojan,no-resolve
+  - IP-CIDR,103.240.225.128/26,LoLgaming,no-resolve
+  - IP-CIDR,103.240.224.128/26,LoLgaming,no-resolve
   - RULE-SET,Riot,Riot
-
   - DOMAIN,autopatchhk.yuanshen.com,Proxy
   - PROCESS-NAME,left4dead2.exe,DIRECT
   
@@ -100,7 +105,7 @@ rules:
   - RULE-SET,reject,REJECT
   - RULE-SET,proxy,Proxy
   - RULE-SET,direct,DIRECT
-  - IP-CIDR,149.154.160.0/20,Google # ipcidr of telegram_dc1, 与telegramcidr有重复, 但懒得新开策略组了
+  - IP-CIDR,149.154.160.0/20,Google
   - RULE-SET,telegramcidr,Proxy
   - RULE-SET,lancidr,DIRECT
   - RULE-SET,cncidr,DIRECT
