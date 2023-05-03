@@ -85,11 +85,10 @@ proxy-groups:
     proxies: [Hong Kong 05 Trojan, DIRECT]
 
 rules:
-  - DOMAIN,www.baidu.com,Proxy
   - RULE-SET,applications,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
-  - DOMAIN,www.msftconnecttest.com,Proxy
+  - DOMAIN,www.msftconnecttest.com,Proxy # 为了更快通过Microsoft的网络检查
   - DOMAIN,sub.nexconvert.com,DIRECT
   - DOMAIN,tagcdnsub.com,Proxy
 
