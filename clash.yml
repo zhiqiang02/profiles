@@ -104,7 +104,7 @@ rules:
   - RULE-SET,reject,REJECT
   - RULE-SET,proxy,Proxy
   - RULE-SET,direct,DIRECT
-  - IP-CIDR,149.154.160.0/20,Google
+  - IP-CIDR,149.154.160.0/20,Google # Telegram_dc1, 懒得新开策略组了
   - RULE-SET,telegramcidr,Proxy
   - RULE-SET,lancidr,DIRECT
   - RULE-SET,cncidr,DIRECT
