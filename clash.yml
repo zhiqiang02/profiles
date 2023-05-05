@@ -76,7 +76,7 @@ proxy-groups:
 
   - name: Riot
     type: select
-    proxies: [Hong Kong 05, DIRECT] # direct给uu用的, 进程模式下, 请求会在离开tun后被uu接管
+    proxies: [Hong Kong 05, DIRECT] # direct给uu用的, 进程模式下,请求会在离开tun后被uu接管(tun在本地的情况)
     use: [TAG]
     filter: '台湾家宽'
 
