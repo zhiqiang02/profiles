@@ -76,13 +76,13 @@ proxy-groups:
 
   - name: Riot
     type: select
-    proxies: [Hong Kong 05, DIRECT]
+    proxies: [Hong Kong 05, DIRECT] # direct给uu用的, 进程模式下, 请求会在离开tun后被uu接管
     use: [TAG]
     filter: '台湾家宽'
 
   - name: LoLgaming
     type: select
-    proxies: [Hong Kong 05 Trojan, DIRECT]
+    proxies: [Hong Kong 05 Trojan, DIRECT] # Trojan为了更稳, direct同上
 
 rules:
   - RULE-SET,applications,DIRECT
