@@ -1,3 +1,3 @@
-# Profiles And Rules
+# Profiles
 
 self-use and sharing
