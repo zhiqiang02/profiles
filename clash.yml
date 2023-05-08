@@ -86,6 +86,7 @@ rules:
   - RULE-SET,applications,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
+  - IP-CIDR,2.2.2.2/32,DIRECT # 校园网认证ip(一个中转，实际的会撞上下边cncdir(或者geoip cn) )
   - DOMAIN,www.msftconnecttest.com,Proxy # 为了更快通过Microsoft的网络检查
   - DOMAIN,sub.nexconvert.com,DIRECT
   - DOMAIN,tagcdnsub.com,Proxy
