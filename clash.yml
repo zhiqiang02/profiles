@@ -8,11 +8,9 @@ dns:
   enable: true
   ipv6: false
   enhanced-mode: fake-ip
-  use-hosts: false
-  nameserver-policy:
-    '*.seig.edu.cn': '172.16.2.1' # 有些东西在外边无法访问，但又不想用学校的dns，所以就当个例外吧
   default-nameserver:
     - 119.29.29.29
+    - 223.5.5.5
   fake-ip-filter:
     - '*.lan'
     - 'localhost.ptlogin2.qq.com'
@@ -21,7 +19,6 @@ dns:
     - "*.stun.playstation.net"
     - xbox.*.microsoft.com
     - "*.xboxlive.com"
-    - "lens.l.google.com"
   nameserver:
     - https://1.12.12.12/dns-query
     - https://223.6.6.6/dns-query
@@ -30,89 +27,161 @@ dns:
     - https://1.1.1.1/dns-query
     - https://dns.rubyfish.cn/dns-query
     - https://public.dns.iij.jp/dns-query
-    - tls://8.8.4.4
   fallback-filter:
     geoip: true
     geoip-code: CN
     ipcidr:
       - 240.0.0.0/4
-      - 0.0.0.0/32
 
-healthCheck: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 300}
+proxies:
+  - {name: Hong Kong 05, type: ss, }
+  - {name: Hong Kong 05 Trojan, type: trojan, }
+  - {name: HK-AHC-10X, type: trojan, }
+
+latencytest: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 600}
 proxy-providers:
   TAG:
     type: http
-    url: hidden
+    url: 
     path: ./nodelist/TAG.yaml
-    interval: 259200
+    interval: 86400
     health-check: *cloudflare
     
   Nexitally:
     type: http
-    url: hidden
-    path: ./nodelist/nexitally.yaml
+    url: 
+    path: ./nodelist/Nexitally.yaml
     interval: 259200
     health-check: *cloudflare
+    # filter: ^((?!Premium).)*$ # Meta only
 
-proxies:
-  - {name: Hong Kong 05 Trojan, type: trojan, server: hidden, port: hidden, password: hidden, sni: hidden, skip-cert-verify: true, udp: true}
-  - {name: Hong Kong 05, type: ss, server: hidden, port: hidden, cipher: aes-128-gcm, password: hidden, udp: true, protocol: origin}
+  Mesl:
+    type: http
+    url: 
+    path: ./nodelist/Mesl.yaml
+    interval: 86400
+    health-check: *cloudflare
 
+policytype:
+  fallback: &fallback {type: fallback, interval: 600, url: http://cp.cloudflare.com/generate_204}
+  urltest: &urltest {type: url-test, interval: 600, url: http://cp.cloudflare.com/generate_204}
 proxy-groups:
   - name: Proxy
     type: select
+    proxies: [Hong Kong, United States, Singapore, Japan]
     use: [Nexitally, TAG]
+    # filter: ^((?!Hong Kong|HK|US|Japan|JP|Singapore|SG).)*$ # Meta only
   
+  - name: GameDownload
+    type: select
+    proxies: [Proxy]
+    use: [Mesl]
+    filter: 0.1X
+
   - name: Google
     type: select
-    proxies: [Hong Kong 05]
-    use: [Nexitally, TAG]
-    filter: 'USA|美国'
-  
+    proxies: [United States, Hong Kong 05]
+
   - name: OpenAI
     type: select
-    use: [Nexitally]
-    filter: 'Singapore|USA'
-
-  - name: Riot
+    proxies: [United States, Singapore]
+    
+  - name: Apple
     type: select
-    proxies: [Hong Kong 05, DIRECT] # direct给uu用的, 进程模式下,请求会在离开tun后被uu接管(tun在本地的情况)
-
-  - name: LoLgaming
+    proxies: [United States]
+  
+  - name: WeChat
     type: select
-    proxies: [Hong Kong 05 Trojan, DIRECT] # Trojan为了更稳, direct同上
+    proxies: [Singapore]
+
+  - name: Telegram
+    type: select
+    proxies: [Singapore]
+
+  - name: Hong Kong
+    <<: *fallback
+    proxies: [HK-Select, HK-Auto]
+  - name: United States
+    <<: *fallback
+    proxies: [US-Select, US-Auto]
+  - name: Singapore
+    <<: *fallback
+    proxies: [SG-Select, SG-Auto]
+  - name: Japan
+    <<: *fallback
+    proxies: [JP-Select, JP-Auto]
+
+  - name: HK-Select
+    type: select
+    use: [Nexitally, TAG]
+    filter: Hong Kong|HK
+  - name: US-Select
+    type: select
+    use: [Nexitally, TAG]
+    filter: US
+  - name: SG-Select
+    type: select
+    use: [Nexitally, TAG]
+    filter: Singapore|SG
+  - name: JP-Select
+    type: select
+    use: [Nexitally, TAG]
+    filter: Japan|JP
+
+  - name: HK-Auto
+    <<: *urltest
+    use: [Nexitally, TAG]
+    filter: Hong Kong|HK
+  - name: US-Auto
+    <<: *urltest
+    use: [Nexitally, TAG]
+    filter: US
+  - name: SG-Auto
+    <<: *urltest
+    use: [Nexitally, TAG]
+    filter: Singapore|SG
+  - name: JP-Auto
+    <<: *urltest
+    use: [Nexitally, TAG]
+    filter: Japan|JP
 
 rules:
-  - RULE-SET,applications,DIRECT
+  # - RULE-SET,applications,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
-  - IP-CIDR,2.2.2.2/32,DIRECT,no-resolve # 校园网认证ip(一个中转，实际的会撞上下边cncdir(或者geoip cn) )
-  - DOMAIN,www.msftconnecttest.com,Proxy # 为了更快通过Microsoft的网络检查
-  - DOMAIN,sub.nexconvert.com,DIRECT
-  - DOMAIN,tagcdnsub.com,Proxy
-
-  - IP-CIDR,103.240.225.128/26,LoLgaming,no-resolve # loltw的两个ip段
-  - IP-CIDR,103.240.224.128/26,LoLgaming,no-resolve # 自己整理的,哪天发现进不去了就更新
-  - RULE-SET,Riot,Riot                              # 进大厅就靠它了
-  - DOMAIN,autopatchhk.yuanshen.com,Proxy
-  - PROCESS-NAME,left4dead2.exe,DIRECT
   
-  - RULE-SET,Google,Google,no-resolve
-  - RULE-SET,OpenAI,OpenAI
+  - DOMAIN,www.189.cn,DIRECT
+  - DOMAIN-SUFFIX,yuanshen.com,Proxy
+  - IP-CIDR,103.240.225.128/26,HK-AHC-10X,no-resolve
+  - IP-CIDR,103.240.224.128/26,HK-AHC-10X,no-resolve
+
   - RULE-SET,private,DIRECT
   - RULE-SET,reject,REJECT
+  - DOMAIN-SUFFIX,sentry.io,REJECT
+  - RULE-SET,Riot,Hong Kong 05
+  - RULE-SET,WeChat,WeChat,no-resolve
+  - RULE-SET,Google,Google,no-resolve
+  - RULE-SET,OpenAI,OpenAI
+
+  - RULE-SET,icloud,Apple
+  - RULE-SET,apple,Apple
   - RULE-SET,proxy,Proxy
   - RULE-SET,direct,DIRECT
-  - IP-CIDR,149.154.160.0/20,Google # Telegram_dc1, 懒得新开策略组了
-  - RULE-SET,telegramcidr,Proxy
-  - RULE-SET,lancidr,DIRECT
+  - RULE-SET,telegramcidr,Telegram
   - RULE-SET,cncidr,DIRECT
+  - RULE-SET,lancidr,DIRECT
+  - IP-CIDR,2.2.2.2/32,DIRECT
   - MATCH,Proxy
 
-classical: &classical {type: http, behavior: classical, interval: 86400}
-domain: &domain {type: http, behavior: domain, interval: 86400}
-ipcidr: &ipcidr {type: http, behavior: ipcidr, interval: 86400}
+ruletype:
+  classical: &classical {type: http, behavior: classical, interval: 86400}
+  domain: &domain {type: http, behavior: domain, interval: 86400}
+  ipcidr: &ipcidr {type: http, behavior: ipcidr, interval: 86400}
 rule-providers:
+  WeChat:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/WeChat/WeChat.yaml
+    path: ./ruleset/WeChat.yaml
   Riot:
     <<: *classical
     url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Riot/Riot.yaml
@@ -126,6 +195,14 @@ rule-providers:
     url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml
     path: ./ruleset/OpenAI.yaml
     
+  icloud:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/icloud.txt
+    path: ./ruleset/icloud.yaml
+  apple:
+    <<: *domain
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/apple.txt
+    path: ./ruleset/apple.yaml
   reject:
     <<: *domain
     url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt
