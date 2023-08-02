@@ -9,8 +9,8 @@ dns:
   ipv6: false
   enhanced-mode: fake-ip
   default-nameserver:
-    - 119.29.29.29
     - 223.5.5.5
+    - 1.0.0.1
   fake-ip-filter:
     - '*.lan'
     - 'localhost.ptlogin2.qq.com'
@@ -27,42 +27,41 @@ dns:
     - https://1.1.1.1/dns-query
     - https://dns.rubyfish.cn/dns-query
     - https://public.dns.iij.jp/dns-query
+    - tls://8.8.4.4
   fallback-filter:
     geoip: true
     geoip-code: CN
-    ipcidr:
-      - 240.0.0.0/4
 
 proxies:
-  - {name: Hong Kong 05, type: ss, }
-  - {name: Hong Kong 05 Trojan, type: trojan, }
-  - {name: HK-AHC-10X, type: trojan, }
+  - {name: Hong Kong 05, type: ss, server: ****, port: ****, cipher: , password: , udp: true, protocol: origin}
+  - {name: Hong Kong 05 Trojan, type: trojan, server: ****, port: ****, password: , sni: , skip-cert-verify: true, udp: true}
+  - {name: HK-AHC-10X, type: trojan, server: ****, port: ****, password: , udp: true, sni: }
 
 latencytest: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 600}
 proxy-providers:
   TAG:
     type: http
-    url: 
+    url: ******
     path: ./nodelist/TAG.yaml
     interval: 86400
     health-check: *cloudflare
     
   Nexitally:
     type: http
-    url: 
+    url: ******
     path: ./nodelist/Nexitally.yaml
-    interval: 259200
+    interval: 86400
     health-check: *cloudflare
     # filter: ^((?!Premium).)*$ # Meta only
 
   Mesl:
     type: http
-    url: 
+    url: ******
     path: ./nodelist/Mesl.yaml
     interval: 86400
     health-check: *cloudflare
 
-policytype:
+type:
   fallback: &fallback {type: fallback, interval: 600, url: http://cp.cloudflare.com/generate_204}
   urltest: &urltest {type: url-test, interval: 600, url: http://cp.cloudflare.com/generate_204}
 proxy-groups:
@@ -71,32 +70,30 @@ proxy-groups:
     proxies: [Hong Kong, United States, Singapore, Japan]
     use: [Nexitally, TAG]
     # filter: ^((?!Hong Kong|HK|US|Japan|JP|Singapore|SG).)*$ # Meta only
-  
+
+  - name: LOL
+    type: select
+    proxies: [Hong Kong 05, Hong Kong 05 Trojan, HK-AHC-10X]
+    use: [Mesl]
+    filter: HK 1[5-9]
+
   - name: GameDownload
     type: select
     proxies: [Proxy]
     use: [Mesl]
-    filter: 0.1X
-
-  - name: Google
+    filter: '0.1'
+    
+  - name: YouTube
     type: select
-    proxies: [United States, Hong Kong 05]
+    proxies: [Hong Kong, United States]
 
   - name: OpenAI
     type: select
     proxies: [United States, Singapore]
-    
+
   - name: Apple
     type: select
     proxies: [United States]
-  
-  - name: WeChat
-    type: select
-    proxies: [Singapore]
-
-  - name: Telegram
-    type: select
-    proxies: [Singapore]
 
   - name: Hong Kong
     <<: *fallback
@@ -113,86 +110,112 @@ proxy-groups:
 
   - name: HK-Select
     type: select
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Hong Kong|HK
   - name: US-Select
     type: select
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: US
   - name: SG-Select
     type: select
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Singapore|SG
   - name: JP-Select
     type: select
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Japan|JP
 
   - name: HK-Auto
     <<: *urltest
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Hong Kong|HK
   - name: US-Auto
     <<: *urltest
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: US
   - name: SG-Auto
     <<: *urltest
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Singapore|SG
   - name: JP-Auto
     <<: *urltest
-    use: [Nexitally, TAG]
+    use: [Nexitally, TAG, Mesl]
     filter: Japan|JP
 
 rules:
-  # - RULE-SET,applications,DIRECT
+  - RULE-SET,applications,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
   
-  - DOMAIN,www.189.cn,DIRECT
-  - DOMAIN-SUFFIX,yuanshen.com,Proxy
-  - IP-CIDR,103.240.225.128/26,HK-AHC-10X,no-resolve
-  - IP-CIDR,103.240.224.128/26,HK-AHC-10X,no-resolve
-
+  - IP-CIDR,103.240.224.0/22,LOL,no-resolve
   - RULE-SET,private,DIRECT
   - RULE-SET,reject,REJECT
+  - RULE-SET,BlockHttpDNS,REJECT
   - DOMAIN-SUFFIX,sentry.io,REJECT
   - RULE-SET,Riot,Hong Kong 05
-  - RULE-SET,WeChat,WeChat,no-resolve
-  - RULE-SET,Google,Google,no-resolve
+  - RULE-SET,DMM,Japan
+  - RULE-SET,Niconico,Japan
+  - RULE-SET,YouTube,YouTube
+  - RULE-SET,Mail,Hong Kong 05
+  - RULE-SET,WeChat,Singapore,no-resolve
+  - RULE-SET,Google,United States,no-resolve
   - RULE-SET,OpenAI,OpenAI
+  - RULE-SET,GameDownload,GameDownload
 
   - RULE-SET,icloud,Apple
   - RULE-SET,apple,Apple
   - RULE-SET,proxy,Proxy
   - RULE-SET,direct,DIRECT
-  - RULE-SET,telegramcidr,Telegram
+  - RULE-SET,telegramcidr,Singapore
   - RULE-SET,cncidr,DIRECT
   - RULE-SET,lancidr,DIRECT
   - IP-CIDR,2.2.2.2/32,DIRECT
+  - DOMAIN,www.189.cn,DIRECT
   - MATCH,Proxy
 
-ruletype:
-  classical: &classical {type: http, behavior: classical, interval: 86400}
-  domain: &domain {type: http, behavior: domain, interval: 86400}
-  ipcidr: &ipcidr {type: http, behavior: ipcidr, interval: 86400}
+classical: &classical {type: http, behavior: classical, interval: 86400}
+domain: &domain {type: http, behavior: domain, interval: 86400}
+ipcidr: &ipcidr {type: http, behavior: ipcidr, interval: 86400}
 rule-providers:
+  Mail:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Mail/Mail_No_Resolve.yaml
+    path: ./ruleset/Mail.yaml
+  BlockHttpDNS:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BlockHttpDNS/BlockHttpDNS_No_Resolve.yaml
+    path: ./ruleset/BlockHttpDNS.yaml
+  Niconico:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Niconico/Niconico_No_Resolve.yaml
+    path: ./ruleset/Niconico.yaml
+  DMM:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/DMM/DMM_No_Resolve.yaml
+    path: ./ruleset/DMM.yaml
+  YouTube:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube_No_Resolve.yaml
+    path: ./ruleset/YouTube.yaml
+  GameDownload:
+    <<: *classical
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Game/GameDownload/GameDownload_No_Resolve.yaml
+    path: ./ruleset/GameDownload.yaml
   WeChat:
     <<: *classical
-    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/WeChat/WeChat.yaml
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/WeChat/WeChat_No_Resolve.yaml
     path: ./ruleset/WeChat.yaml
   Riot:
     <<: *classical
-    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Riot/Riot.yaml
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Riot/Riot_No_Resolve.yaml
     path: ./ruleset/Riot.yaml
   Google:
     <<: *classical
-    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.yaml
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google_No_Resolve.yaml
     path: ./ruleset/Google.yaml
   OpenAI:
     <<: *classical
-    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI.yaml
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/OpenAI/OpenAI_No_Resolve.yaml
     path: ./ruleset/OpenAI.yaml
     
   icloud:
