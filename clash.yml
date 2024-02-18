@@ -21,7 +21,7 @@ dns:
     - xbox.*.microsoft.com
     - "*.xboxlive.com"
   nameserver:
-    - https://at-zhiqiang.kh************/dns-query
+    - https://at-zhiqiang.hk************/dns-query
 
 
 proxies:
