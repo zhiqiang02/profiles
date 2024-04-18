@@ -1,0 +1,37 @@
+mixed-port: 7889
+mode: rule
+log-level: info
+ipv6: false # 如无特殊需求不应开启 IPv6，目前网络环境下 IPv6 只会带来问题。
+external-controller: 127.0.0.1:9090
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver: [223.5.5.5, 114.114.114.114]
+  # nameserver: [https://223.5.5.5] # 除非当地 ISP 有严重的 DNS 污染问题，否则没必要开启 DoH，传统 DNS 的性能最优，网络异常后恢复速度最快
+  # fallback: [https://1.1.1.1/dns-query]
+
+proxies:
+
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies:
+      - DIRECT
+
+rule:
+  - RULE-SET,blocked,Proxy
+  - GEOIP,LAN,DIRECT
+  - GEOIP,CN,DIRECT
+  - MATCH,Proxy
+
+rule-providers:
+  blocked:
+    behavior: classical
+    type: http
+    url: https://github.com/Blankwonder/surge-list/raw/master/blocked.list
+    path: ./ruleset/blocked.list
+    format: text
+    interval: 86400
