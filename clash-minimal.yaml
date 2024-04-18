@@ -1,7 +1,7 @@
 mixed-port: 7889
 mode: rule
 log-level: info
-ipv6: false # 如无特殊需求不应开启 IPv6，目前网络环境下 IPv6 只会带来问题。
+ipv6: false # 如无特殊需求不应开启 IPv6，目前网络环境下 IPv6 只会带来问题
 external-controller: 127.0.0.1:9090
 
 dns:
