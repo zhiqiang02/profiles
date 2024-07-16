@@ -27,12 +27,12 @@ dns:
 proxies:
   - {name: Hong Kong 05, type: ss, server: ************, port: *****, cipher: aes-128-gcm, password: ************, udp: true, protocol: origin}
 
-latencytest: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 600}
+cloudflare: &cloudflare {enable: true, url: http://cp.cloudflare.com/generate_204, interval: 600}
 proxy-providers:
-  common:
+  primary:
     type: http
     url: https://gist.githubusercontent.com/******
-    path: ./nodelist/common.yaml
+    path: ./nodelist/primary.yaml
     interval: 86400
     health-check: *cloudflare
   other:
@@ -67,7 +67,7 @@ proxy-groups:
   - name: Proxy
     type: select
     proxies: [Hong Kong, United States, Taiwan, Singapore, Japan]
-    use: [common]
+    use: [primary]
   - name: GameUDP
     type: select
     proxies: [Proxy]
@@ -102,23 +102,23 @@ proxy-groups:
 
   - name: HK-Select
     type: select
-    use: [common]
+    use: [primary]
     filter: HK
   - name: US-Select
     type: select
-    use: [common]
+    use: [primary]
     filter: US
   - name: TW-Select
     type: select
-    use: [common]
+    use: [primary]
     filter: TW
   - name: SG-Select
     type: select
-    use: [common]
+    use: [primary]
     filter: SG
   - name: JP-Select
     type: select
-    use: [common]
+    use: [primary]
     filter: JP
 
   - name: Hong Kong
@@ -139,33 +139,38 @@ proxy-groups:
 
   - name: HK-Auto
     <<: *urltest
-    use: [common]
+    use: [primary]
     filter: HK
   - name: US-Auto
     <<: *urltest
-    use: [common]
+    use: [primary]
     filter: US
   - name: TW-Auto
     <<: *urltest
-    use: [common]
+    use: [primary]
     filter: TW
   - name: SG-Auto
     <<: *urltest
-    use: [common]
+    use: [primary]
     filter: SG
   - name: JP-Auto
     <<: *urltest
-    use: [common]
+    use: [primary]
     filter: JP
 
+script:
+  engine: expr
+  shortcuts:
+    quic: network == 'udp' and dst_port == 443
+
 rules:
-  - RULE-SET,StarRailUDP,GameUDP
+  - SCRIPT,quic,REJECT,no-resolve
+
   - DOMAIN-SUFFIX,t-mobile.com,United States
 
   - RULE-SET,private,DIRECT
   - RULE-SET,reject,REJECT
   - RULE-SET,BlockHttpDNS,REJECT
-
   - RULE-SET,GameDownload,GameDownload
   - RULE-SET,DMM,Japan
   - RULE-SET,Niconico,Japan
